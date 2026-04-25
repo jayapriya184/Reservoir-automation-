@@ -1,0 +1,107 @@
+#include <WiFi.h>
+#include <ThingSpeak.h>
+char ssid[] = "Wokwi-GUEST";
+char pass[] = "";
+WiFiClient client;
+unsigned long myChannelNumber = 2655010;
+const char * myWriteAPIKey = "MQXDW64PL5271A2Z";
+const int TRIG_PIN = 2;
+const int ECHO_PIN = 4;
+const int trig1 = 5;
+const int echo1 = 18;
+const int relay=15;
+long duration, distance;
+long dur,dis;
+int statusCode;
+int tank=4000;
+void setup() {
+Serial.begin(115200);
+WiFi.mode(WIFI_STA);
+ThingSpeak.begin(client);
+pinMode(TRIG_PIN, OUTPUT);
+pinMode(ECHO_PIN, INPUT);
+pinMode(relay, OUTPUT);
+pinMode(trig1, OUTPUT);
+pinMode(echo1, INPUT);
+
+}
+void loop() {
+connectToCloud();
+computeData();
+writeData();
+
+delay(1000);
+}
+void connectToCloud(){
+if(WiFi.status() != WL_CONNECTED) {
+Serial.print("Attempting to connect");
+while(WiFi.status() != WL_CONNECTED) {
+WiFi.begin(ssid, pass);
+for(int i=0;i<5;i++) {
+Serial.print(".");
+delay(1000);
+}
+}
+Serial.println("\nConnected.");
+}
+}
+void computeData(){
+distance = getDistanceInCentimeters();
+dis=getdis();
+
+
+Serial.println("-----------");
+Serial.println("Dist: " + String(distance));
+
+        if(distance<=100)
+      
+        if(dis>=100)
+        {
+        digitalWrite(relay, HIGH);
+        Serial.println("Relay On");
+        }
+        else
+        {
+          
+          digitalWrite(relay, LOW);
+        }
+      
+        else if(distance>=380)
+        {
+          Serial.println("Relay Off");
+          digitalWrite(relay, LOW);
+        }
+Serial.println("-----------");
+}
+void writeData(){
+
+ThingSpeak.setField(1, distance);
+ThingSpeak.setField(2, dis);
+statusCode = ThingSpeak.writeFields(myChannelNumber,myWriteAPIKey);
+if(statusCode == 200) //successful writing code
+Serial.println("Channel update successful.");
+else
+Serial.println("Problem Writing data. HTTP error code :" +
+String(statusCode));
+delay(15000); // data to be uploaded every 15secs
+}
+long getDistanceInCentimeters() {
+digitalWrite(TRIG_PIN,LOW);
+delayMicroseconds(2);
+digitalWrite(TRIG_PIN, HIGH);
+delayMicroseconds(10);
+digitalWrite(TRIG_PIN, LOW);
+duration = pulseIn(ECHO_PIN, HIGH);
+return (duration * 0.034 / 2);
+}
+long getdis()
+{
+  digitalWrite(trig1, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trig1, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trig1, LOW);
+  dur= pulseIn(echo1, HIGH);
+  return{dur*0.034/2};
+  Serial.println(dur);
+}
